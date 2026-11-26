@@ -1,19 +1,43 @@
 #!/bin/sh
 set -e
 appdir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
-export LD_LIBRARY_PATH="$appdir/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-export PYTHONDONTWRITEBYTECODE=1
+library_dir=$appdir/usr/lib
 
-# Keep the host's graphics stack unless the Qt platform is missing a library.
-platform=libqxcb.so
-qt_platform=${QT_QPA_PLATFORM:-}
-if [ "${qt_platform%%:*}" = wayland ] ||
-    { [ -n "${WAYLAND_DISPLAY:-}" ] && [ "${MIRADA_WAYLAND:-}" = 1 ]; }; then
-    platform=libqwayland.so
-fi
-if ldd "$appdir/usr/python/lib/"python*/site-packages/PySide6/Qt/plugins/platforms/"$platform" |
-    grep -Fq 'not found'; then
-    LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$appdir/usr/lib/fallback"
-fi
+# Only expose the bundled copy of a library when the host lacks its SONAME.
+host_sonames=$(
+    PATH="$PATH:/sbin:/usr/sbin" ldconfig -p 2>/dev/null |
+        awk '/\(libc6,x86-64[),]/ {print $1}'
+)
 
-exec "$appdir/usr/python/bin/python3" -s -m mirada "$@"
+host_has_library() {
+    case "$host_sonames" in
+        *"
+$1
+"*) return 0 ;;
+    esac
+
+    search=${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/lib64:/usr/lib64:/lib:/usr/lib
+    while [ -n "$search" ]; do
+        search_dir=${search%%:*}
+        [ ! -f "${search_dir:-.}/$1" ] || return 0
+        case "$search" in
+            *:*) search=${search#*:} ;;
+            *) break ;;
+        esac
+    done
+    return 1
+}
+
+host_sonames="
+$host_sonames
+"
+bundle_path=$library_dir
+for directory in "$library_dir/fallback/"*; do
+    [ -d "$directory" ] || continue
+    if ! host_has_library "${directory##*/}"; then
+        bundle_path=$bundle_path:$directory
+    fi
+done
+
+export LD_LIBRARY_PATH="$bundle_path${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+exec "$appdir/usr/python/bin/python3" -I -B -m mirada "$@"

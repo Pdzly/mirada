@@ -34,6 +34,10 @@ install -Dm644 -- "$repo_root/data/mirada.desktop" "$stage/usr/share/application
 install -Dm644 -- "$repo_root/src/mirada/mirada.svg" "$stage/usr/share/icons/hicolor/scalable/apps/mirada.svg"
 doc=$stage/usr/share/doc/mirada
 install -Dm644 -- "$repo_root/LICENSE" "$doc/copyright"
+printf '\nSee THIRD-PARTY-NOTICES.txt and licenses/ for bundled components.\n' >> "$doc/copyright"
+mv -T -- "$stage/opt/mirada/licenses" "$doc/licenses"
+mv -T -- "$stage/opt/mirada/THIRD-PARTY-NOTICES.txt" "$doc/THIRD-PARTY-NOTICES.txt"
+cp -- "$doc/THIRD-PARTY-NOTICES.txt" "$work/THIRD-PARTY-NOTICES.txt"
 install -m644 -- "$repo_root/README.md" "$doc/README.md"
 gzip -n -9 -c -- "$repo_root/CHANGELOG.md" > "$doc/changelog.gz"
 
@@ -56,4 +60,5 @@ CONTROL
 artifact=mirada_${version}_amd64.deb
 dpkg-deb -z3 --build --root-owner-group "$stage" "$work/$artifact"
 mv -Tf -- "$work/$artifact" "$out/$artifact"
+mv -Tf -- "$work/THIRD-PARTY-NOTICES.txt" "$out/THIRD-PARTY-NOTICES.txt"
 echo "$out/$artifact"
