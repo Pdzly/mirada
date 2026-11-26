@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Mirada
+GenericName=Teleprompter
+Comment=Teleprompter bajo la cámara con seguimiento por voz
+Comment[en]=Teleprompter under your webcam that scrolls while you speak
+Exec=mirada
+Icon=mirada
+Terminal=false
+Categories=AudioVideo;Video;Office;
+Keywords=teleprompter;prompter;guion;script;
+StartupWMClass=mirada

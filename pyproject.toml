@@ -1,0 +1,57 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mirada"
+dynamic = ["version"]
+description = "Teleprompter para Linux: tu guion bajo la cámara, avanza mientras hablas"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [{ name = "Mirada contributors" }]
+keywords = ["teleprompter", "prompter", "linux", "video", "qt"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: X11 Applications :: Qt",
+  "Intended Audience :: End Users/Desktop",
+  "Natural Language :: Spanish",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Topic :: Multimedia :: Video",
+]
+dependencies = [
+  "PySide6-Essentials>=6.6",
+  "numpy>=1.24",
+  "sounddevice>=0.4.6",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.gui-scripts]
+mirada = "mirada.app:main"
+
+[tool.hatch.version]
+path = "src/mirada/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mirada"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "data", "install.sh", "uninstall.sh", "README*.md", "LICENSE", "CHANGELOG.md"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E702", "B023"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/mirada/remote.py" = ["E501"]  # página HTML embebida
