@@ -146,8 +146,9 @@ AppImage Type-2 Runtime $runtime_tag (MIT; includes statically linked dependenci
     License: licenses/AppImage-runtime/musl-COPYRIGHT
   zstd 1.5.6 (BSD-3-Clause): https://github.com/facebook/zstd/tree/v1.5.6
     License: licenses/AppImage-runtime/zstd-LICENSE
-  xxHash 0.8.2 (BSD-2-Clause), included in zstd: https://github.com/facebook/zstd/blob/v1.5.6/lib/common/xxhash.h
-    License: licenses/AppImage-runtime/xxHash-LICENSE
+  xxHash, copy included in zstd 1.5.6 (Copyright Yann Collet - Meta Platforms, Inc; BSD-3-Clause, see zstd-LICENSE above):
+    https://github.com/facebook/zstd/blob/v1.5.6/lib/common/xxhash.h
+    Upstream xxHash 0.8.2 license (BSD-2-Clause), for reference: licenses/AppImage-runtime/xxHash-LICENSE
   zlib 1.3.1 (Zlib): https://github.com/madler/zlib/tree/v1.3.1
     License: licenses/AppImage-runtime/zlib-LICENSE
 
