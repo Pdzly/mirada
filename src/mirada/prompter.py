@@ -11,6 +11,27 @@ from PySide6.QtWidgets import QMenu, QSizeGrip, QWidget
 
 from .audio import VoiceMeter
 from .config import APP, parse_sections
+from .geometry import fit_floating, notch_rect
+
+# Intervalos del temporizador (ms): fluido al avanzar, más lento en reposo para
+# ahorrar batería.
+FPS_MOVING = 16
+FPS_VOICE = 50        # quieto, pero la barra de volumen sigue animándose
+FPS_IDLE = 250
+
+
+def rect_tuple(r) -> tuple[int, int, int, int]:
+    return (r.x(), r.y(), r.width(), r.height())
+
+
+def target_screen(conf: dict):
+    """Pantalla elegida en Ajustes; si no existe (monitor desconectado), la principal."""
+    name = conf.get("screen") or ""
+    if name:
+        for s in QGuiApplication.screens():
+            if s.name() == name:
+                return s
+    return QGuiApplication.primaryScreen()
 
 
 class Prompter(QWidget):
@@ -48,8 +69,36 @@ class Prompter(QWidget):
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.tick)
-        self.timer.start(16)
+        self.timer.start(FPS_MOVING)
         self.restart()
+
+        # Reubicar si cambia un panel, la resolución o se conecta/desconecta un monitor.
+        self._relayout_pending = False
+        app = QGuiApplication.instance()
+        app.screenAdded.connect(self._on_screen_added)
+        app.screenRemoved.connect(lambda _s: self._schedule_apply())
+        app.primaryScreenChanged.connect(lambda _s: self._schedule_apply())
+        for s in QGuiApplication.screens():
+            self._watch(s)
+
+    def _watch(self, s):
+        s.geometryChanged.connect(lambda _r: self._schedule_apply())
+        s.availableGeometryChanged.connect(lambda _r: self._schedule_apply())
+
+    def _on_screen_added(self, s):
+        self._watch(s)
+        self._schedule_apply()
+
+    def _schedule_apply(self):
+        if not self._relayout_pending:
+            self._relayout_pending = True
+            QTimer.singleShot(150, self._delayed_apply)
+
+    def _delayed_apply(self):
+        self._relayout_pending = False
+        if self.isVisible():
+            self.remember_geometry()
+            self.apply_mode()
 
     # ---------- documento ----------
     def build_doc(self):
@@ -110,17 +159,26 @@ class Prompter(QWidget):
     # ---------- modo / geometría ----------
     def apply_mode(self):
         c = self.conf
-        scr = self.screen() or QGuiApplication.primaryScreen()
-        g = scr.geometry()
+        scr = target_screen(c)
         if c["mode"] == "notch":
-            w, h = int(c["notch_width"]), int(c["notch_height"])
-            self.setGeometry(g.x() + (g.width() - w) // 2, g.y(), w, h)
+            x, y, w, h = notch_rect(rect_tuple(scr.geometry()), rect_tuple(scr.availableGeometry()),
+                                    int(c["notch_width_pct"]), int(c["notch_height"]),
+                                    int(c["camera_x_pct"]), c["panel_mode"])
             self.grip.hide()
         else:
-            x, y, w, h = c["float_geometry"]
-            self.setGeometry(int(x), int(y), int(w), int(h))
+            avails = [rect_tuple(s.availableGeometry()) for s in QGuiApplication.screens()]
+            x, y, w, h = fit_floating(tuple(int(v) for v in c["float_geometry"]), avails,
+                                      rect_tuple(scr.availableGeometry()))
             self.grip.show()
+        self.setGeometry(x, y, w, h)
         self.relayout()
+
+    def move_camera(self, d: int):
+        """Corre el notch a izquierda/derecha para alinearlo con la cámara."""
+        if self.conf["mode"] != "notch":
+            return
+        self.conf["camera_x_pct"] = max(0, min(100, int(self.conf["camera_x_pct"]) + d))
+        self.apply_mode()
 
     def resizeEvent(self, e):
         self.grip.move(self.width() - self.grip.width() - 4, self.height() - self.grip.height() - 4)
@@ -172,6 +230,7 @@ class Prompter(QWidget):
         self.build_doc()
 
     def handle_remote(self, cmd: str, i: int):
+        self.wake()
         if cmd == "toggle":
             self.toggle_pause()
         elif cmd == "next":
@@ -204,16 +263,37 @@ class Prompter(QWidget):
         now = time.monotonic()
         dt = min(0.1, now - self._last)
         self._last = now
-        if self.moving():
+        moving = self.moving()
+        if moving:
             max_off = max(0.0, self.doc.size().height() - self.text_rect().height() * 0.3)
             self.offset = min(max_off, self.offset + float(self.conf["speed"]) * dt)
+        if moving or now < self.countdown_end:
+            interval = FPS_MOVING
+        elif self.conf["voice"] and self.voice.stream is not None:
+            interval = FPS_VOICE
+        else:
+            interval = FPS_IDLE
+        if self.timer.interval() != interval:
+            self.timer.setInterval(interval)
+        self.update()
+
+    def wake(self):
+        """Vuelve a la frecuencia rápida tras una acción del usuario."""
+        self._last = time.monotonic()
+        self.timer.setInterval(FPS_MOVING)
         self.update()
 
     # ---------- eventos ----------
     def keyPressEvent(self, e):
+        self.wake()
         k = e.key()
         K = Qt.Key
-        if k == K.Key_Space:
+        step = 5 if e.modifiers() & Qt.KeyboardModifier.ShiftModifier else 1
+        if k == K.Key_Left:
+            self.move_camera(-step)
+        elif k == K.Key_Right:
+            self.move_camera(step)
+        elif k == K.Key_Space:
             self.toggle_pause()
         elif k == K.Key_Up:
             self.change_speed(5)
@@ -245,17 +325,21 @@ class Prompter(QWidget):
             super().keyPressEvent(e)
 
     def wheelEvent(self, e):
+        self.wake()
         self.offset = max(0.0, self.offset - e.angleDelta().y() * 0.4)
 
     def enterEvent(self, e):
+        self.wake()
         self.hovering = True
         super().enterEvent(e)
 
     def leaveEvent(self, e):
+        self.wake()
         self.hovering = False
         super().leaveEvent(e)
 
     def mousePressEvent(self, e):
+        self.wake()
         if e.button() == Qt.MouseButton.LeftButton:
             self.activateWindow()
             self.setFocus()

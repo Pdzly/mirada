@@ -24,8 +24,11 @@ def script_file() -> Path:
 
 DEFAULTS: dict = {
     "mode": "notch",            # notch | floating
-    "notch_width": 620,
+    "notch_width_pct": 32,      # % del ancho de la pantalla
     "notch_height": 150,
+    "screen": "",               # nombre de la pantalla; vacío = principal
+    "camera_x_pct": 50,         # posición horizontal de la cámara, 0-100
+    "panel_mode": "below",      # below | over (respecto de un panel superior)
     "float_geometry": [200, 200, 760, 300],
     "font_size": 26,
     "text_color": "#f2f2f2",
@@ -45,7 +48,8 @@ DEFAULTS: dict = {
 
 # Rangos válidos para los valores numéricos (se recortan al cargar).
 RANGES: dict[str, tuple[int, int]] = {
-    "notch_width": (250, 4000),
+    "notch_width_pct": (15, 100),
+    "camera_x_pct": (0, 100),
     "notch_height": (60, 1200),
     "font_size": (10, 90),
     "bg_opacity": (80, 255),
@@ -56,6 +60,7 @@ RANGES: dict[str, tuple[int, int]] = {
 }
 
 MODES = ("notch", "floating")
+PANEL_MODES = ("below", "over")
 
 SAMPLE = """# Apertura
 Hola a todos, gracias por estar aquí.
@@ -101,6 +106,8 @@ def sanitize(raw: object) -> dict:
                 conf[key] = [int(x) for x in val]
     if conf["mode"] not in MODES:
         conf["mode"] = DEFAULTS["mode"]
+    if conf["panel_mode"] not in PANEL_MODES:
+        conf["panel_mode"] = DEFAULTS["panel_mode"]
     # Códigos antiguos (cortos) se reemplazan por uno más largo.
     if len(conf["remote_token"]) < 16:
         conf["remote_token"] = new_token()

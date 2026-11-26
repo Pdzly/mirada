@@ -1,5 +1,16 @@
 # Cambios
 
+## 0.3.0 — 2026-11-25
+
+- El notch se pone **bajo el panel superior** (KDE, GNOME, XFCE…) en vez de quedar tapado por él. Opción *Sobre el panel* para paneles que se ocultan solos.
+- **Elegir pantalla** en Ajustes, para notebooks con monitor externo. Si el monitor se desconecta, vuelve a la principal.
+- **Posición de la cámara**: centro, izquierda, derecha o porcentaje exacto; ajuste fino con ← / → en el prompter.
+- El ancho del notch es un **porcentaje de la pantalla**, así que se ve igual de proporcionado en cualquier resolución.
+- Se reubica solo al cambiar la resolución, el panel o los monitores.
+- Una ventana flotante que quedó fuera de pantalla (monitor desconectado) vuelve a una pantalla visible.
+- **Ahorro de batería**: menos redibujos por segundo mientras está en pausa.
+- Nota: la opción antigua `notch_width` (px) se reemplaza por `notch_width_pct`; el ancho vuelve al valor por defecto.
+
 ## 0.2.0 — 2026-11-25
 
 - Código abierto con licencia MIT; Qt pasa de PyQt6 a PySide6 (LGPL).

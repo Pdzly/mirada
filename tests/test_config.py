@@ -66,3 +66,17 @@ def test_parse_sections():
 
 def test_reading_minutes():
     assert reading_minutes("palabra " * 140) == 1.0
+
+
+def test_new_layout_options_validated():
+    conf = sanitize({"panel_mode": "raro", "camera_x_pct": 150, "notch_width_pct": 3, "screen": 5})
+    assert conf["panel_mode"] == "below"
+    assert conf["camera_x_pct"] == 100
+    assert conf["notch_width_pct"] == 15
+    assert conf["screen"] == ""
+
+
+def test_old_pixel_width_is_ignored():
+    conf = sanitize({"notch_width": 620})
+    assert "notch_width" not in conf
+    assert conf["notch_width_pct"] == DEFAULTS["notch_width_pct"]

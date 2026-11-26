@@ -26,6 +26,7 @@ HELP = """Atajos en el prompter:
   M              modo espejo
   + / -          tamaño de letra
   N              alternar modo notch / flotante
+  ← / →          mover el notch para alinearlo con la cámara (Shift: más rápido)
   Esc            cerrar prompter
 Rueda del mouse: desplazamiento manual. Pasar el mouse encima: pausa."""
 

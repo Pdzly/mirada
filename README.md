@@ -73,12 +73,24 @@ bash uninstall.sh --purge    # borra también ~/.config/mirada
 | Inicio | Volver al principio |
 | V | Activar / desactivar voz |
 | N | Alternar modo notch / flotante |
+| ← / → | Mover el notch para alinearlo con la cámara (Shift: más rápido) |
 | M | Modo espejo |
 | + / − | Tamaño de letra |
 | Esc | Cerrar el prompter |
 
 - Pasar el mouse sobre el prompter lo pausa. Clic en el icono ⏸ de la esquina para pausar sin dejar el mouse encima.
 - Rueda del mouse: desplazamiento manual. Clic derecho: menú con la lista de secciones.
+
+### Pantalla, cámara y paneles
+
+En **Ajustes** puedes elegir:
+
+- **Pantalla:** en qué monitor aparece el prompter (útil con un notebook y un monitor externo). Si desconectas ese monitor, Mirada vuelve a la pantalla principal.
+- **Posición de la cámara:** centro, izquierda, derecha o un porcentaje exacto, para webcams externas que no están al centro. También puedes ajustarla con ← / → mientras lees.
+- **Panel:** si tu escritorio tiene un panel arriba (KDE, GNOME, XFCE…), el notch se pone justo debajo para que no lo tape. Si tu panel se oculta solo, elige *Sobre el panel*.
+- **Tamaño del notch:** el ancho es un porcentaje de la pantalla, así que se ve proporcionado en un notebook de 1366 px y en un monitor 4K.
+
+Mirada se reubica sola si cambias la resolución, mueves el panel o conectas otro monitor. Cuando está en pausa redibuja menos veces por segundo para gastar menos batería.
 
 ### Control remoto desde el teléfono
 

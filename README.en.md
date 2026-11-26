@@ -48,11 +48,16 @@ Open **Mirada** from the menu or run `mirada`. Write or paste your script, then 
 | Home | Back to the start |
 | V | Toggle voice tracking |
 | N | Toggle notch / floating mode |
+| ← / → | Move the notch to line it up with the camera (Shift: faster) |
 | M | Mirror mode |
 | + / − | Font size |
 | Esc | Close the prompter |
 
 The interface is currently in Spanish. Translations are welcome.
+
+### Screens, camera and panels
+
+In **Ajustes** (Settings) you can pick which monitor the prompter uses, where your camera is (center, left, right or an exact percentage) and whether the notch goes below a top panel (default) or over it (for auto-hiding panels). The notch width is a percentage of the screen, so it looks right on a 1366 px laptop and on a 4K monitor. Mirada repositions itself when the resolution, panel or monitors change, and redraws less often while paused to save battery.
 
 ## Limitations on Linux
 
