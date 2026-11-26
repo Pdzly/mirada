@@ -7,6 +7,10 @@ on:
     paths:
       - "packaging/**"
       - ".github/workflows/release.yml"
+      - "pyproject.toml"
+      - "src/**"
+      - "data/**"
+      - "LICENSE"
   workflow_dispatch:
 
 permissions:
@@ -21,27 +25,30 @@ jobs:
     name: Build .deb + AppImage
     runs-on: ubuntu-22.04
     timeout-minutes: 60
+    env:
+      # CI mode of the test scripts: every image must pass, a skipped image or a failed pull is a FAIL.
+      PACKAGING_STRICT: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Version aus src/mirada/__init__.py
+      - name: Read version from src/mirada/__init__.py
         id: version
         run: |
           version="$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' src/mirada/__init__.py)"
-          if [ -z "$version" ]; then echo "Version nicht gefunden" >&2; exit 1; fi
+          if [ -z "$version" ]; then echo "Version not found" >&2; exit 1; fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "Version: $version"
 
-      - name: Tag muss zur Version passen
+      - name: Tag must match the version
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           TAG: ${{ github.ref_name }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           if [ "$TAG" != "v$VERSION" ]; then
-            echo "Tag $TAG passt nicht zu Version $VERSION in src/mirada/__init__.py" >&2
+            echo "Tag $TAG does not match version $VERSION in src/mirada/__init__.py" >&2
             exit 1
           fi
 
@@ -49,46 +56,47 @@ jobs:
         with:
           version: "0.13.10"
 
-      - name: Build-Abhaengigkeiten
+      - name: Build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             libxcb-cursor0 libxcb-image0 libxcb-render-util0 libxcb-util1 libportaudio2 \
             squashfs-tools desktop-file-utils
 
-      # build-deb.sh liest Maintainer aus der Git-Konfiguration
-      - name: Git-Identitaet fuer Maintainer-Feld
+      # build-deb.sh reads the maintainer from the git configuration
+      - name: Git identity for the Maintainer field
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: .deb bauen
+      - name: Build .deb
         run: packaging/build-deb.sh --out dist
 
-      - name: AppImage bauen
+      - name: Build AppImage
         run: packaging/build-appimage.sh --out dist
 
-      - name: Artefakte pruefen
+      - name: Check artifacts
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           ls -l dist
           test -s "dist/mirada_${VERSION}_amd64.deb"
           test -s "dist/Mirada-${VERSION}-x86_64.AppImage"
+          test -s dist/THIRD-PARTY-NOTICES.txt
 
-      - name: .deb testen
+      - name: Test .deb
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: packaging/test/test-deb.sh "dist/mirada_${VERSION}_amd64.deb"
 
-      - name: AppImage testen
+      - name: Test AppImage
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: packaging/test/test-appimage.sh "dist/Mirada-${VERSION}-x86_64.AppImage"
 
-      - name: Pruefsummen
+      - name: Checksums
         working-directory: dist
-        run: sha256sum -- *.deb *.AppImage | tee SHA256SUMS
+        run: sha256sum -- *.deb *.AppImage THIRD-PARTY-NOTICES.txt | tee SHA256SUMS
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -96,6 +104,7 @@ jobs:
           path: |
             dist/*.deb
             dist/*.AppImage
+            dist/THIRD-PARTY-NOTICES.txt
             dist/SHA256SUMS
           if-no-files-found: error
 
@@ -112,7 +121,7 @@ jobs:
           name: mirada-packages
           path: dist
 
-      - name: Pruefsummen verifizieren
+      - name: Verify checksums
         working-directory: dist
         run: sha256sum --check SHA256SUMS
 
@@ -121,5 +130,8 @@ jobs:
           files: |
             dist/*.deb
             dist/*.AppImage
+            dist/THIRD-PARTY-NOTICES.txt
             dist/SHA256SUMS
+          body: |
+            Corresponding source for bundled components: see THIRD-PARTY-NOTICES.txt
           generate_release_notes: true
