@@ -4,7 +4,9 @@
 
 [English](README.en.md) · Licencia [MIT](LICENSE)
 
-<!-- Agrega aquí una captura: docs/captura.png -->
+![Mirada bajo la webcam](docs/img/hero.png)
+
+![Demo: el texto avanza mientras hablas y se detiene en las pausas](docs/img/demo.gif)
 
 ## Características
 

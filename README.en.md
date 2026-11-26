@@ -4,6 +4,10 @@
 
 [Español](README.md) · [MIT](LICENSE) license
 
+![Mirada under the webcam](docs/img/hero.png)
+
+![Demo: the text scrolls while you talk and waits when you pause](docs/img/demo.gif)
+
 ## Features
 
 - **Notch mode:** a strip centered under the webcam, always on top of other windows.
