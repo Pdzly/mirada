@@ -119,6 +119,17 @@ download_verified https://raw.githubusercontent.com/libfuse/libfuse/fuse-3.15.0/
     dc626520dcd53a22f727af3ee42c770e56c97a64fe3adb063799d8ab032fe551 "$runtime_licenses/libfuse-LGPL-2.1.txt"
 download_verified https://raw.githubusercontent.com/vasi/squashfuse/0.5.2/LICENSE \
     9e909cc8a8ba27b1a649c964cf9eda37de911f3138c2b64e6d2f01703904ac13 "$runtime_licenses/squashfuse-LICENSE"
+# Versions match the pinned x86_64 runtime and its published debug symbols.
+download_verified https://raw.githubusercontent.com/microsoft/mimalloc/v2.1.7/LICENSE \
+    19c99805e7a44a34b297a75d1edea9985e300066dfc024d5c99d4236d4573b5d "$runtime_licenses/mimalloc-LICENSE"
+download_verified https://raw.githubusercontent.com/ifduyue/musl/v1.2.5/COPYRIGHT \
+    f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af "$runtime_licenses/musl-COPYRIGHT"
+download_verified https://raw.githubusercontent.com/facebook/zstd/v1.5.6/LICENSE \
+    7055266497633c9025b777c78eb7235af13922117480ed5c674677adc381c9d8 "$runtime_licenses/zstd-LICENSE"
+download_verified https://raw.githubusercontent.com/Cyan4973/xxHash/v0.8.2/LICENSE \
+    6ffedbc0f7878612d2b23589f1ff2ab15633e1df7963a5d9fc750ec5500c7e7a "$runtime_licenses/xxHash-LICENSE"
+download_verified https://raw.githubusercontent.com/madler/zlib/v1.3.1/LICENSE \
+    845efc77857d485d91fb3e0b884aaa929368c717ae8186b66fe1ed2495753243 "$runtime_licenses/zlib-LICENSE"
 cat >> "$notices" <<NOTICES
 
 AppImage Type-2 Runtime $runtime_tag (MIT; includes statically linked dependencies)
@@ -129,6 +140,16 @@ AppImage Type-2 Runtime $runtime_tag (MIT; includes statically linked dependenci
   https://github.com/libfuse/libfuse/releases/download/fuse-3.15.0/fuse-3.15.0.tar.xz
   https://github.com/AppImage/type2-runtime/blob/$runtime_tag/patches/libfuse/mount.c.diff
   squashfuse 0.5.2: https://github.com/vasi/squashfuse/tree/0.5.2
+  mimalloc 2.1.7 (MIT): https://github.com/microsoft/mimalloc/tree/v2.1.7
+    License: licenses/AppImage-runtime/mimalloc-LICENSE
+  musl 1.2.5 (MIT and component notices): https://musl.libc.org/releases/musl-1.2.5.tar.gz
+    License: licenses/AppImage-runtime/musl-COPYRIGHT
+  zstd 1.5.6 (BSD-3-Clause): https://github.com/facebook/zstd/tree/v1.5.6
+    License: licenses/AppImage-runtime/zstd-LICENSE
+  xxHash 0.8.2 (BSD-2-Clause), included in zstd: https://github.com/facebook/zstd/blob/v1.5.6/lib/common/xxhash.h
+    License: licenses/AppImage-runtime/xxHash-LICENSE
+  zlib 1.3.1 (Zlib): https://github.com/madler/zlib/tree/v1.3.1
+    License: licenses/AppImage-runtime/zlib-LICENSE
 
   Run the AppImage with --appimage-extract to get squashfs-root/. The Mirada
   payload runs via squashfs-root/AppRun independently of the Type-2 Runtime.
