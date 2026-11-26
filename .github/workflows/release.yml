@@ -1,0 +1,140 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  pull_request:
+    paths:
+      - "packaging/**"
+      - ".github/workflows/release.yml"
+      - "pyproject.toml"
+      - "src/**"
+      - "data/**"
+      - "LICENSE"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: Build .deb + AppImage
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    env:
+      # CI mode of the test scripts: every image must pass, a skipped image or a failed pull is a FAIL.
+      PACKAGING_STRICT: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Read version from src/mirada/__init__.py
+        id: version
+        run: |
+          version="$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' src/mirada/__init__.py)"
+          if [ -z "$version" ]; then echo "Version not found" >&2; exit 1; fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Version: $version"
+
+      - name: Tag must match the version
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if [ "$TAG" != "v$VERSION" ]; then
+            echo "Tag $TAG does not match version $VERSION in src/mirada/__init__.py" >&2
+            exit 1
+          fi
+
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
+        with:
+          version: "0.13.10"
+
+      - name: Build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libxcb-cursor0 libxcb-image0 libxcb-render-util0 libxcb-util1 libportaudio2 \
+            squashfs-tools desktop-file-utils
+
+      # build-deb.sh reads the maintainer from the git configuration
+      - name: Git identity for the Maintainer field
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Build .deb
+        run: packaging/build-deb.sh --out dist
+
+      - name: Build AppImage
+        run: packaging/build-appimage.sh --out dist
+
+      - name: Check artifacts
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          ls -l dist
+          test -s "dist/mirada_${VERSION}_amd64.deb"
+          test -s "dist/Mirada-${VERSION}-x86_64.AppImage"
+          test -s dist/THIRD-PARTY-NOTICES-deb.txt
+          test -s dist/THIRD-PARTY-NOTICES-AppImage.txt
+
+      - name: Test .deb
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: packaging/test/test-deb.sh "dist/mirada_${VERSION}_amd64.deb"
+
+      - name: Test AppImage
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: packaging/test/test-appimage.sh "dist/Mirada-${VERSION}-x86_64.AppImage"
+
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum -- *.deb *.AppImage THIRD-PARTY-NOTICES-*.txt | tee SHA256SUMS
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mirada-packages
+          path: |
+            dist/*.deb
+            dist/*.AppImage
+            dist/THIRD-PARTY-NOTICES-deb.txt
+            dist/THIRD-PARTY-NOTICES-AppImage.txt
+            dist/SHA256SUMS
+          if-no-files-found: error
+
+  release:
+    name: GitHub Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: mirada-packages
+          path: dist
+
+      - name: Verify checksums
+        working-directory: dist
+        run: sha256sum --check SHA256SUMS
+
+      - uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
+        with:
+          files: |
+            dist/*.deb
+            dist/*.AppImage
+            dist/THIRD-PARTY-NOTICES-deb.txt
+            dist/THIRD-PARTY-NOTICES-AppImage.txt
+            dist/SHA256SUMS
+          body: |
+            Corresponding source for bundled components: see THIRD-PARTY-NOTICES-deb.txt and THIRD-PARTY-NOTICES-AppImage.txt
+          generate_release_notes: true
