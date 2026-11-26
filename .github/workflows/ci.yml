@@ -33,3 +33,28 @@ jobs:
         run: |
           pip install build
           python -m build
+
+  packaging:
+    name: Packaging (shellcheck + Versionsabgleich)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+          shopt -s nullglob
+          files=(packaging/*.sh packaging/test/*.sh)
+          if [ "${#files[@]}" -eq 0 ]; then echo "keine Packaging-Skripte" >&2; exit 1; fi
+          shellcheck "${files[@]}"
+      - name: Version und Tag
+        run: |
+          version="$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' src/mirada/__init__.py)"
+          test -n "$version"
+          echo "Version: $version"
+          if [ "${GITHUB_REF_TYPE}" = tag ] && [ "${GITHUB_REF_NAME}" != "v$version" ]; then
+            echo "Tag ${GITHUB_REF_NAME} passt nicht zu Version $version" >&2
+            exit 1
+          fi
+          # Aenderungsprotokoll nennt die aktuelle Version
+          grep -q "$version" CHANGELOG.md || echo "Hinweis: CHANGELOG.md erwaehnt $version nicht"
