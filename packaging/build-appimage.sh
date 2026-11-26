@@ -32,16 +32,28 @@ install -m644 -- "$repo_root/data/mirada.desktop" "$appdir/mirada.desktop"
 install -m644 -- "$repo_root/src/mirada/mirada.svg" "$appdir/mirada.svg"
 ln -s mirada.svg "$appdir/.DirIcon"
 
+doc=$appdir/usr/share/doc/mirada
+install -Dm644 -- "$repo_root/LICENSE" "$doc/copyright"
+mv -T -- "$appdir/usr/licenses" "$doc/licenses"
+mv -T -- "$appdir/usr/THIRD-PARTY-NOTICES.txt" "$doc/THIRD-PARTY-NOTICES.txt"
+cp -- "$doc/THIRD-PARTY-NOTICES.txt" "$work/THIRD-PARTY-NOTICES.txt"
+
 config=$repo_root/packaging/appimage
 mkdir -- "$work/apt" "$work/native"
 mapfile -t packages < <(cut -d ' ' -f 1 "$config/libraries.txt" "$config/fallback-libraries.txt")
 (cd -- "$work/apt" && apt-get download "${packages[@]}")
 for archive in "$work/apt/"*.deb; do
+    package=$(dpkg-deb -f "$archive" Package)
+    package_version=$(dpkg-deb -f "$archive" Version)
+    if ! grep -Fxq -- "- $package $package_version" "$doc/THIRD-PARTY-NOTICES.txt"; then
+        echo "Unexpected version for bundled package: $package $package_version" >&2
+        exit 1
+    fi
     dpkg-deb --extract "$archive" "$work/native"
 done
 
 copy_libraries() {
-    local manifest=$1 destination=$2 package library source
+    local manifest=$1 package library source destination
     local -a entry
     while read -r -a entry; do
         package=${entry[0]}
@@ -50,16 +62,19 @@ copy_libraries() {
             if [[ ! -f "$source" ]]; then
                 source=$work/native/lib/x86_64-linux-gnu/$library
             fi
+            destination=$appdir/usr/lib
+            if [[ $manifest == "$config/fallback-libraries.txt" ]]; then
+                destination=$destination/fallback/$library
+            fi
             install -Dm644 -- "$source" "$destination/$library"
         done
         install -Dm644 -- "$work/native/usr/share/doc/$package/copyright" \
-            "$appdir/usr/share/doc/$package/copyright"
+            "$doc/licenses/ubuntu/$package/copyright"
     done < "$manifest"
 }
 
-copy_libraries "$config/libraries.txt" "$appdir/usr/lib"
-copy_libraries "$config/fallback-libraries.txt" "$appdir/usr/lib/fallback"
-install -Dm644 -- "$repo_root/LICENSE" "$appdir/usr/share/doc/mirada/copyright"
+copy_libraries "$config/libraries.txt"
+copy_libraries "$config/fallback-libraries.txt"
 
 tool_url=https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-x86_64.AppImage
 tool_sha256=ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0
@@ -88,4 +103,5 @@ artifact=Mirada-${version}-x86_64.AppImage
 ARCH=x86_64 "$tool" --appimage-extract-and-run --no-appstream --runtime-file "$runtime" \
     --mksquashfs-opt=-processors --mksquashfs-opt=2 "$appdir" "$work/$artifact"
 mv -Tf -- "$work/$artifact" "$out/$artifact"
+mv -Tf -- "$work/THIRD-PARTY-NOTICES.txt" "$out/THIRD-PARTY-NOTICES.txt"
 echo "$out/$artifact"

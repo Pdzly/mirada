@@ -1,3 +1,2 @@
 #!/bin/sh
-export PYTHONDONTWRITEBYTECODE=1
-exec /opt/mirada/python/bin/python3 -s -m mirada "$@"
+exec /opt/mirada/python/bin/python3 -I -B -m mirada "$@"
