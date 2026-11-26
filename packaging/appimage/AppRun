@@ -1,0 +1,19 @@
+#!/bin/sh
+set -e
+appdir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+export LD_LIBRARY_PATH="$appdir/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export PYTHONDONTWRITEBYTECODE=1
+
+# Keep the host's graphics stack unless the Qt platform is missing a library.
+platform=libqxcb.so
+qt_platform=${QT_QPA_PLATFORM:-}
+if [ "${qt_platform%%:*}" = wayland ] ||
+    { [ -n "${WAYLAND_DISPLAY:-}" ] && [ "${MIRADA_WAYLAND:-}" = 1 ]; }; then
+    platform=libqwayland.so
+fi
+if ldd "$appdir/usr/python/lib/"python*/site-packages/PySide6/Qt/plugins/platforms/"$platform" |
+    grep -Fq 'not found'; then
+    LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$appdir/usr/lib/fallback"
+fi
+
+exec "$appdir/usr/python/bin/python3" -s -m mirada "$@"

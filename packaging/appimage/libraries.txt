@@ -1,0 +1,7 @@
+libxcb-cursor0 libxcb-cursor.so.0
+libxcb-icccm4 libxcb-icccm.so.4
+libxcb-image0 libxcb-image.so.0
+libxcb-keysyms1 libxcb-keysyms.so.1
+libxcb-render-util0 libxcb-render-util.so.0
+libxcb-util1 libxcb-util.so.1
+libportaudio2 libportaudio.so.2
