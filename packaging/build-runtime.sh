@@ -51,9 +51,51 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from importlib import metadata
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 from urllib.request import urlopen
 
 stage, repo, stdlib = map(Path, sys.argv[1:])
+
+
+def git_read(*args):
+    if not (repo / ".git").exists() or not shutil.which("git"):
+        return ""
+    result = subprocess.run(
+        ["git", "-C", str(repo), *args],
+        env={**os.environ, "GIT_OPTIONAL_LOCKS": "0"},
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip() if result.returncode == 0 else ""
+
+
+def public_repository_url(remote):
+    if "://" not in remote and "@" in remote and ":" in remote:
+        host, path = remote.split("@", 1)[1].split(":", 1)
+        remote = f"ssh://{host}/{path}"
+    try:
+        url = urlsplit(remote)
+        if url.scheme not in ("https", "http", "ssh", "git") or not url.hostname:
+            return ""
+        host = url.hostname
+        if ":" in host:
+            host = f"[{host}]"
+        if url.scheme in ("http", "https") and url.port:
+            host = f"{host}:{url.port}"
+        path = url.path.rstrip("/").removesuffix(".git")
+        return urlunsplit(("https", host, path, "", "")) if path else ""
+    except ValueError:
+        return ""
+
+
+repository_url = (
+    public_repository_url(os.environ.get("MIRADA_SOURCE_URL", ""))
+    or public_repository_url(git_read("remote", "get-url", "origin"))
+    or "https://github.com/jleiva831/mirada"
+)
+commit = git_read("rev-parse", "HEAD")
+dirty = " (dirty working tree)" if commit and git_read("status", "--porcelain") else ""
+
 licenses = stage / "licenses"
 python_licenses = licenses / "CPython"
 python_licenses.mkdir(parents=True)
@@ -61,7 +103,7 @@ shutil.copyfile(stdlib / "LICENSE.txt", python_licenses / "LICENSE.txt")
 python_version = ".".join(map(str, sys.version_info[:3]))
 python_build = (stage / "python" / "BUILD").read_text().strip()
 notices = [
-    "Mirada runtime and AppImage third-party notices",
+    "Mirada third-party notices",
     "",
     "The source code corresponding to the distributed versions is available at",
     "the links below. License and copyright texts are under licenses/.",
@@ -83,8 +125,13 @@ for dist in sorted(metadata.distributions(), key=lambda item: item.metadata["Nam
         license_id = "See included license texts"
     notices.append(f"- {name}=={version} ({license_id})")
     if name.lower() == "mirada":
-        notices.append("  Source: the Mirada fork revision used to build this package.")
-        notices.append(f"  https://github.com/Pdzly/mirada/tree/v{version} (release tag)")
+        notices.append(f"  Repository: {repository_url}")
+        if commit:
+            notices.append(f"  Build commit: {commit}{dirty}")
+            if urlsplit(repository_url).hostname == "github.com":
+                notices.append(f"  Source at build commit: {repository_url}/tree/{commit}")
+        else:
+            notices.append("  Build commit: unavailable in this source checkout")
     else:
         notices.append(f"  Release and source links: https://pypi.org/project/{name}/{version}/")
     for entry in dist.files or ():
@@ -104,10 +151,6 @@ notices.extend([
     f"Qt {qt_version} (LGPL-3.0-only and other licenses; see upstream notices)",
     f"  Qt source: https://download.qt.io/archive/qt/{qt_series}/{qt_version}/single/qt-everywhere-src-{qt_version}.tar.xz",
     f"  PySide6 and Shiboken source: https://github.com/pyside/pyside-setup/tree/v{qt_version}",
-    "",
-    "Native libraries included in the AppImage only",
-    "  Source: enable Ubuntu source repositories, then use the apt-get source commands below.",
-    "  License and copyright terms are in the AppImage's licenses/ubuntu/ directory.",
 ])
 
 # These wheels may omit the Qt and Qt for Python license texts.
@@ -127,30 +170,6 @@ with ThreadPoolExecutor(max_workers=4) as pool:
         for project, upstream in (("Qt", "qt/qtbase"), ("Qt-for-Python", "pyside/pyside-setup"))
         for filename in qt_files
     ]))
-
-manifest_dir = repo / "packaging" / "appimage"
-packages = sorted({
-    line.split()[0]
-    for filename in ("libraries.txt", "fallback-libraries.txt")
-    for line in (manifest_dir / filename).read_text().splitlines()
-})
-apt_env = {**os.environ, "LC_ALL": "C"}
-policy = subprocess.check_output(["apt-cache", "policy", *packages], text=True, env=apt_env)
-versions = {}
-for line in policy.splitlines():
-    if line and not line.startswith(" "):
-        package = line.rstrip(":").split(":")[0]
-    elif line.startswith("  Candidate: "):
-        versions[package] = line.split()[1]
-for package in packages:
-    version = versions.get(package)
-    if not version or version == "(none)":
-        raise SystemExit(f"No APT candidate for {package}. Run apt-get update before building.")
-    notices.extend([
-        f"- {package} {version}",
-        f"  apt-get source {package}={version}",
-        f"  https://packages.ubuntu.com/jammy/{package}",
-    ])
 
 (stage / "THIRD-PARTY-NOTICES.txt").write_text("\n".join(notices) + "\n", encoding="utf-8")
 PY

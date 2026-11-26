@@ -60,5 +60,5 @@ CONTROL
 artifact=mirada_${version}_amd64.deb
 dpkg-deb -z3 --build --root-owner-group "$stage" "$work/$artifact"
 mv -Tf -- "$work/$artifact" "$out/$artifact"
-mv -Tf -- "$work/THIRD-PARTY-NOTICES.txt" "$out/THIRD-PARTY-NOTICES.txt"
+mv -Tf -- "$work/THIRD-PARTY-NOTICES.txt" "$out/THIRD-PARTY-NOTICES-deb.txt"
 echo "$out/$artifact"

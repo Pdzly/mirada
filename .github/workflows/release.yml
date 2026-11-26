@@ -82,7 +82,8 @@ jobs:
           ls -l dist
           test -s "dist/mirada_${VERSION}_amd64.deb"
           test -s "dist/Mirada-${VERSION}-x86_64.AppImage"
-          test -s dist/THIRD-PARTY-NOTICES.txt
+          test -s dist/THIRD-PARTY-NOTICES-deb.txt
+          test -s dist/THIRD-PARTY-NOTICES-AppImage.txt
 
       - name: Test .deb
         env:
@@ -96,7 +97,7 @@ jobs:
 
       - name: Checksums
         working-directory: dist
-        run: sha256sum -- *.deb *.AppImage THIRD-PARTY-NOTICES.txt | tee SHA256SUMS
+        run: sha256sum -- *.deb *.AppImage THIRD-PARTY-NOTICES-*.txt | tee SHA256SUMS
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -104,7 +105,8 @@ jobs:
           path: |
             dist/*.deb
             dist/*.AppImage
-            dist/THIRD-PARTY-NOTICES.txt
+            dist/THIRD-PARTY-NOTICES-deb.txt
+            dist/THIRD-PARTY-NOTICES-AppImage.txt
             dist/SHA256SUMS
           if-no-files-found: error
 
@@ -130,8 +132,9 @@ jobs:
           files: |
             dist/*.deb
             dist/*.AppImage
-            dist/THIRD-PARTY-NOTICES.txt
+            dist/THIRD-PARTY-NOTICES-deb.txt
+            dist/THIRD-PARTY-NOTICES-AppImage.txt
             dist/SHA256SUMS
           body: |
-            Corresponding source for bundled components: see THIRD-PARTY-NOTICES.txt
+            Corresponding source for bundled components: see THIRD-PARTY-NOTICES-deb.txt and THIRD-PARTY-NOTICES-AppImage.txt
           generate_release_notes: true

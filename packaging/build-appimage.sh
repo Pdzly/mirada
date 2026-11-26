@@ -36,19 +36,31 @@ doc=$appdir/usr/share/doc/mirada
 install -Dm644 -- "$repo_root/LICENSE" "$doc/copyright"
 mv -T -- "$appdir/usr/licenses" "$doc/licenses"
 mv -T -- "$appdir/usr/THIRD-PARTY-NOTICES.txt" "$doc/THIRD-PARTY-NOTICES.txt"
-cp -- "$doc/THIRD-PARTY-NOTICES.txt" "$work/THIRD-PARTY-NOTICES.txt"
+notices=$doc/THIRD-PARTY-NOTICES.txt
 
 config=$repo_root/packaging/appimage
 mkdir -- "$work/apt" "$work/native"
 mapfile -t packages < <(cut -d ' ' -f 1 "$config/libraries.txt" "$config/fallback-libraries.txt")
 (cd -- "$work/apt" && apt-get download "${packages[@]}")
+cat >> "$notices" <<'NOTICES'
+
+Native libraries bundled from Ubuntu packages
+  License and copyright terms: licenses/ubuntu/
+  Enable Ubuntu source repositories before running the source commands below.
+NOTICES
+source_field='^([^[:space:]]+) \(([^)]+)\)$'
 for archive in "$work/apt/"*.deb; do
     package=$(dpkg-deb -f "$archive" Package)
     package_version=$(dpkg-deb -f "$archive" Version)
-    if ! grep -Fxq -- "- $package $package_version" "$doc/THIRD-PARTY-NOTICES.txt"; then
-        echo "Unexpected version for bundled package: $package $package_version" >&2
-        exit 1
+    source_package=$(dpkg-deb -f "$archive" Source)
+    source_version=$package_version
+    if [[ $source_package =~ $source_field ]]; then
+        source_package=${BASH_REMATCH[1]}
+        source_version=${BASH_REMATCH[2]}
     fi
+    printf '%s\n' "- $package $package_version" \
+        "  apt-get source '${source_package:-$package}=$source_version'" \
+        "  https://packages.ubuntu.com/jammy/$package" >> "$notices"
     dpkg-deb --extract "$archive" "$work/native"
 done
 
@@ -78,7 +90,8 @@ copy_libraries "$config/fallback-libraries.txt"
 
 tool_url=https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-x86_64.AppImage
 tool_sha256=ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0
-runtime_url=https://github.com/AppImage/type2-runtime/releases/download/20251108/runtime-x86_64
+runtime_tag=20251108
+runtime_url=https://github.com/AppImage/type2-runtime/releases/download/$runtime_tag/runtime-x86_64
 runtime_sha256=2fca8b443c92510f1483a883f60061ad09b46b978b2631c807cd873a47ec260d
 
 download_verified() {
@@ -98,10 +111,36 @@ tool=$work/appimagetool
 runtime=$work/runtime-x86_64
 download_verified "$tool_url" "$tool_sha256" "$tool"
 download_verified "$runtime_url" "$runtime_sha256" "$runtime"
+runtime_licenses=$doc/licenses/AppImage-runtime
+mkdir -p -- "$runtime_licenses"
+download_verified "https://raw.githubusercontent.com/AppImage/type2-runtime/$runtime_tag/LICENSE" \
+    aa154fc9070614bbe7921f89db11efd1dba7a1f3a41685958110e2230f9c0ca1 "$runtime_licenses/LICENSE"
+download_verified https://raw.githubusercontent.com/libfuse/libfuse/fuse-3.15.0/LGPL2.txt \
+    dc626520dcd53a22f727af3ee42c770e56c97a64fe3adb063799d8ab032fe551 "$runtime_licenses/libfuse-LGPL-2.1.txt"
+download_verified https://raw.githubusercontent.com/vasi/squashfuse/0.5.2/LICENSE \
+    9e909cc8a8ba27b1a649c964cf9eda37de911f3138c2b64e6d2f01703904ac13 "$runtime_licenses/squashfuse-LICENSE"
+cat >> "$notices" <<NOTICES
+
+AppImage Type-2 Runtime $runtime_tag (MIT; includes statically linked dependencies)
+  License texts and dependency notices: licenses/AppImage-runtime/
+  Corresponding source, build recipes and dependency patches:
+  https://github.com/AppImage/type2-runtime/tree/$runtime_tag
+  libfuse 3.15.0 (LGPL-2.1-or-later):
+  https://github.com/libfuse/libfuse/releases/download/fuse-3.15.0/fuse-3.15.0.tar.xz
+  https://github.com/AppImage/type2-runtime/blob/$runtime_tag/patches/libfuse/mount.c.diff
+  squashfuse 0.5.2: https://github.com/vasi/squashfuse/tree/0.5.2
+
+  Run the AppImage with --appimage-extract to get squashfs-root/. The Mirada
+  payload runs via squashfs-root/AppRun independently of the Type-2 Runtime.
+  To relink the runtime with a modified libfuse, rebuild the runtime using the
+  sources and recipe above, then repackage the extracted directory:
+    ARCH=x86_64 appimagetool --no-appstream --runtime-file ./runtime-x86_64 squashfs-root Mirada-repacked.AppImage
+NOTICES
+cp -- "$notices" "$work/THIRD-PARTY-NOTICES.txt"
 chmod +x -- "$tool"
 artifact=Mirada-${version}-x86_64.AppImage
 ARCH=x86_64 "$tool" --appimage-extract-and-run --no-appstream --runtime-file "$runtime" \
     --mksquashfs-opt=-processors --mksquashfs-opt=2 "$appdir" "$work/$artifact"
 mv -Tf -- "$work/$artifact" "$out/$artifact"
-mv -Tf -- "$work/THIRD-PARTY-NOTICES.txt" "$out/THIRD-PARTY-NOTICES.txt"
+mv -Tf -- "$work/THIRD-PARTY-NOTICES.txt" "$out/THIRD-PARTY-NOTICES-AppImage.txt"
 echo "$out/$artifact"

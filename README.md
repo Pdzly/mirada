@@ -32,7 +32,7 @@ chmod +x Mirada-VERSION-x86_64.AppImage
 ./Mirada-VERSION-x86_64.AppImage
 ```
 
-El `.deb` instala en `/opt/mirada` y crea el comando `mirada`; se desinstala con `sudo apt remove mirada`. El AppImage ya incluye `xcb-cursor` y PortAudio; si tu sistema no tiene FUSE, ejecútalo con `--appimage-extract-and-run`. Para construirlos tú mismo: `bash packaging/build-deb.sh` y `bash packaging/build-appimage.sh` (resultado en `dist/`; ver `packaging/`).
+El `.deb` instala en `/opt/mirada` y crea el comando `mirada`; se desinstala con `sudo apt remove mirada`. El AppImage ya incluye `xcb-cursor` y PortAudio; para el seguimiento por voz el sistema necesita además ALSA (`libasound2`, y `libjack-jackd2-0` en sistemas mínimos), que cualquier escritorio normal ya trae; si tu sistema no tiene FUSE, ejecútalo con `--appimage-extract-and-run`. Para construirlos tú mismo: `bash packaging/build-deb.sh` y `bash packaging/build-appimage.sh` (resultado en `dist/`; ver `packaging/`).
 
 ### Opción 2: instalador
 
