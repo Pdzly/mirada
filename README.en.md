@@ -19,6 +19,23 @@
 
 ## Install
 
+### .deb or AppImage (recommended)
+
+Download the file from the [latest release](https://github.com/jleiva831/mirada/releases/latest) (once one is published). Both ship their own Python and Qt, so no `pip` is needed. Tested on Debian 12 and 13 and Ubuntu 22.04 and 24.04 (the AppImage should run on any distribution with a recent glibc). `apt` only fetches missing system libraries (e.g. `libxcb-cursor0`), so it needs access to your distribution's package mirrors.
+
+```bash
+# Debian 12+ / Ubuntu 22.04+ / Mint / Pop!_OS
+sudo apt install ./mirada_VERSION_amd64.deb
+
+# any x86_64 distribution
+chmod +x Mirada-VERSION-x86_64.AppImage
+./Mirada-VERSION-x86_64.AppImage
+```
+
+The `.deb` installs to `/opt/mirada` and provides the `mirada` command; remove it with `sudo apt remove mirada`. The AppImage already contains `xcb-cursor` and PortAudio; voice tracking additionally needs ALSA on the system (`libasound2`, plus `libjack-jackd2-0` on minimal systems), which any regular desktop already has; without FUSE run it with `--appimage-extract-and-run`. To build them yourself: `bash packaging/build-deb.sh` and `bash packaging/build-appimage.sh` (output in `dist/`, see `packaging/`).
+
+### From source
+
 ```bash
 git clone https://github.com/jleiva831/mirada.git
 cd mirada
