@@ -1,5 +1,9 @@
 # Cambios
 
+## 0.4.1 — 2026-11-26
+
+- **Instaladores**: paquete `.deb` (Debian 12+ / Ubuntu 22.04+) y **AppImage** (x86_64), con Python y Qt incluidos; no hace falta instalar nada más. Se adjuntan a cada versión en GitHub. Gracias a @Pdzly (#1).
+
 ## 0.4.0 — 2026-11-26
 
 - **Calibración de ruido**: en Ajustes, el botón *Calibrar con 3 s de silencio* mide el ruido de fondo (ventilador, teclado, calle) y ajusta la sensibilidad sola. Ignora clics aislados y avisa si hay demasiado ruido para usar la voz.
