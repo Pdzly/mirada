@@ -19,7 +19,22 @@
 
 ## Instalar
 
-### Opción 1: instalador (recomendado)
+### Opción 1: paquete .deb o AppImage (recomendado)
+
+Descarga el archivo de la [última versión](https://github.com/jleiva831/mirada/releases/latest). Ambos traen su propio Python y Qt; no necesitan internet al instalar ni `pip`.
+
+```bash
+# Debian 12+ / Ubuntu 22.04+ / Mint / Pop!_OS
+sudo apt install ./mirada_VERSION_amd64.deb
+
+# cualquier distribución x86_64
+chmod +x Mirada-VERSION-x86_64.AppImage
+./Mirada-VERSION-x86_64.AppImage
+```
+
+El `.deb` instala en `/opt/mirada` y crea el comando `mirada`; se desinstala con `sudo apt remove mirada`. El AppImage ya incluye `xcb-cursor` y PortAudio; si tu sistema no tiene FUSE, ejecútalo con `--appimage-extract-and-run`. Para construirlos tú mismo: `bash packaging/build-deb.sh` y `bash packaging/build-appimage.sh` (resultado en `dist/`; ver `packaging/`).
+
+### Opción 2: instalador
 
 ```bash
 git clone https://github.com/jleiva831/mirada.git
@@ -29,7 +44,7 @@ bash install.sh
 
 Instala todo en tu usuario (`~/.local`), sin sudo, y agrega Mirada al menú de aplicaciones.
 
-### Opción 2: pipx o uv
+### Opción 3: pipx o uv
 
 ```bash
 pipx install git+https://github.com/jleiva831/mirada.git
