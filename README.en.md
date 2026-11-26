@@ -21,7 +21,7 @@
 
 ### .deb or AppImage (recommended)
 
-Download the file from the [latest release](https://github.com/jleiva831/mirada/releases/latest). Both ship their own Python and Qt, so no internet and no `pip` are needed at install time.
+Download the file from the [latest release](https://github.com/jleiva831/mirada/releases/latest) (once one is published). Both ship their own Python and Qt, so no `pip` is needed. Tested on Debian 12 and 13 and Ubuntu 22.04 and 24.04 (the AppImage should run on any distribution with a recent glibc). `apt` only fetches missing system libraries (e.g. `libxcb-cursor0`), so it needs access to your distribution's package mirrors.
 
 ```bash
 # Debian 12+ / Ubuntu 22.04+ / Mint / Pop!_OS
