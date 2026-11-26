@@ -21,7 +21,7 @@
 
 ### Opción 1: paquete .deb o AppImage (recomendado)
 
-Descarga el archivo de la [última versión](https://github.com/jleiva831/mirada/releases/latest). Ambos traen su propio Python y Qt; no necesitan internet al instalar ni `pip`.
+Descarga el archivo de la [última versión](https://github.com/jleiva831/mirada/releases/latest) (cuando haya una publicada). Ambos traen su propio Python y Qt; no necesitan `pip`. Probados en Debian 12 y 13 y Ubuntu 22.04 y 24.04 (el AppImage, en cualquier distribución con glibc reciente). `apt` descarga solo las bibliotecas del sistema que falten (p. ej. `libxcb-cursor0`), así que necesita acceso a los repositorios de tu distribución.
 
 ```bash
 # Debian 12+ / Ubuntu 22.04+ / Mint / Pop!_OS
