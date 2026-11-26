@@ -16,12 +16,12 @@
 ## Install
 
 ```bash
-git clone https://github.com/USUARIO/mirada.git
+git clone https://github.com/jleiva831/mirada.git
 cd mirada
 bash install.sh
 ```
 
-The installer puts everything in `~/.local` (no sudo) and adds Mirada to your app menu. You can also run `pipx install git+https://github.com/USUARIO/mirada.git`.
+The installer puts everything in `~/.local` (no sudo) and adds Mirada to your app menu. You can also run `pipx install git+https://github.com/jleiva831/mirada.git`.
 
 System libraries: PortAudio (for voice tracking) and `xcb-cursor` (for Qt).
 

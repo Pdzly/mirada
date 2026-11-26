@@ -20,7 +20,7 @@
 ### Opción 1: instalador (recomendado)
 
 ```bash
-git clone https://github.com/USUARIO/mirada.git
+git clone https://github.com/jleiva831/mirada.git
 cd mirada
 bash install.sh
 ```
@@ -30,9 +30,9 @@ Instala todo en tu usuario (`~/.local`), sin sudo, y agrega Mirada al menú de a
 ### Opción 2: pipx o uv
 
 ```bash
-pipx install git+https://github.com/USUARIO/mirada.git
+pipx install git+https://github.com/jleiva831/mirada.git
 # o
-uv tool install git+https://github.com/USUARIO/mirada.git
+uv tool install git+https://github.com/jleiva831/mirada.git
 ```
 
 ### Bibliotecas del sistema
