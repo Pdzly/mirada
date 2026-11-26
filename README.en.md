@@ -63,7 +63,7 @@ In **Ajustes** (Settings) you can pick which monitor the prompter uses, where yo
 
 - **Wayland:** Mirada runs through XWayland so it can stay pinned on top. Set `MIRADA_WAYLAND=1` to force native Wayland, which may lose always-on-top.
 - **Screen sharing:** Linux has no standard way to hide a window from captures. Share a single window instead of the whole screen.
-- **Voice:** it detects that you're speaking from the volume; it doesn't recognize words.
+- **Voice:** it detects that you're speaking from the volume; it doesn't recognize words. In a noisy room, use the 3-second noise calibration in Settings (*Calibrar con 3 s de silencio*).
 
 ## Development
 

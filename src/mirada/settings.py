@@ -1,7 +1,7 @@
 """Diálogo de ajustes."""
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor, QGuiApplication
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QSpinBox,
 )
 
-from .audio import AUDIO_OK, input_devices
+from .audio import AUDIO_OK, CALIBRATION_SECONDS, VoiceMeter, calibrate, input_devices
 from .geometry import CAMERA_PRESETS, top_panel_height
 from .prompter import rect_tuple, target_screen
 
@@ -115,7 +115,19 @@ class SettingsDialog(QDialog):
 
         self.sens = QSlider(Qt.Orientation.Horizontal); self.sens.setRange(0, 100)
         self.sens.setValue(conf["sensitivity"])
-        f.addRow("Sensibilidad del micrófono", self.sens)
+        self.calib_btn = QPushButton("Calibrar con 3 s de silencio")
+        self.calib_btn.setToolTip("Mide el ruido de fondo (ventilador, teclado, calle) y ajusta la sensibilidad.")
+        self.calib_btn.clicked.connect(self.start_calibration)
+        self.calib_btn.setEnabled(AUDIO_OK)
+        row = QHBoxLayout(); row.addWidget(self.sens, 1); row.addWidget(self.calib_btn)
+        f.addRow("Sensibilidad del micrófono", row)
+        self.calib_msg = QLabel()
+        self.calib_msg.setStyleSheet("color: gray")
+        self.calib_msg.setWordWrap(True)
+        self.calib_msg.hide()
+        f.addRow("", self.calib_msg)
+        self._calib_meter: VoiceMeter | None = None
+        self._calib_left = 0
 
         self.device = QComboBox()
         self.device.addItem("Predeterminado del sistema", "")
@@ -159,6 +171,54 @@ class SettingsDialog(QDialog):
         h = top_panel_height(rect_tuple(s.geometry()), rect_tuple(s.availableGeometry()))
         self.panel_hint.setText(f"Panel superior detectado: {h} px" if h else
                                 "No se detectó un panel en el borde superior de esta pantalla.")
+
+    # ---------- calibración ----------
+    def start_calibration(self):
+        meter = VoiceMeter()
+        if not meter.start(self.device.currentData() or ""):
+            self.show_calib(f"No se pudo abrir el micrófono: {meter.error}")
+            return
+        self._calib_meter = meter
+        meter.begin_capture()
+        self._calib_left = int(CALIBRATION_SECONDS)
+        self.calib_btn.setEnabled(False)
+        self.show_calib("Silencio, por favor: midiendo el ruido de fondo…")
+        self._calib_tick()
+
+    def _calib_tick(self):
+        if self._calib_meter is None:       # se cerró el diálogo a mitad de la medición
+            return
+        if self._calib_left > 0:
+            self.calib_btn.setText(f"Midiendo… {self._calib_left}")
+            self._calib_left -= 1
+            QTimer.singleShot(1000, self._calib_tick)
+            return
+        meter, self._calib_meter = self._calib_meter, None
+        levels = meter.end_capture()
+        meter.stop()
+        self.calib_btn.setText("Calibrar con 3 s de silencio")
+        self.calib_btn.setEnabled(True)
+        if not levels:
+            self.show_calib("No llegó audio del micrófono. Revisa que esté conectado y sin silenciar.")
+            return
+        sens, noise, too_noisy = calibrate(levels)
+        self.sens.setValue(sens)
+        if too_noisy:
+            self.show_calib("Hay mucho ruido de fondo: dejé la sensibilidad al mínimo. Usa audífonos con "
+                            "micrófono o desactiva la voz (V) y avanza a velocidad fija.")
+        else:
+            self.show_calib(f"Listo: ruido de fondo {round(noise * 100)} %, sensibilidad ajustada a {sens}. "
+                            "Pulsa Aceptar para guardar.")
+
+    def show_calib(self, msg: str):
+        self.calib_msg.setText(msg)
+        self.calib_msg.show()
+
+    def done(self, r):
+        if self._calib_meter is not None:
+            self._calib_meter.stop()
+            self._calib_meter = None
+        super().done(r)
 
     def pick_color(self):
         col = QColorDialog.getColor(QColor(self.text_color), self)

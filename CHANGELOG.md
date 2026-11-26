@@ -1,5 +1,9 @@
 # Cambios
 
+## 0.4.0 — 2026-11-26
+
+- **Calibración de ruido**: en Ajustes, el botón *Calibrar con 3 s de silencio* mide el ruido de fondo (ventilador, teclado, calle) y ajusta la sensibilidad sola. Ignora clics aislados y avisa si hay demasiado ruido para usar la voz.
+
 ## 0.3.0 — 2026-11-25
 
 - El notch se pone **bajo el panel superior** (KDE, GNOME, XFCE…) en vez de quedar tapado por él. Opción *Sobre el panel* para paneles que se ocultan solos.

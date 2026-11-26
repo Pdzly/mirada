@@ -108,7 +108,7 @@ El tráfico va por HTTP sin cifrar: úsalo solo en redes de confianza.
 
 - **Wayland:** Mirada se ejecuta vía XWayland para poder fijarse arriba y quedar sobre otras ventanas. Funciona en GNOME y KDE. Para forzar Wayland nativo: `MIRADA_WAYLAND=1 mirada` (puede perder el «siempre encima»).
 - **Compartir pantalla:** Linux no tiene una forma estándar de ocultar una ventana en capturas. Comparte una ventana concreta, no la pantalla completa.
-- **Voz:** detecta si estás hablando por el volumen, no reconoce palabras. Si hay ruido (ventilador, teclado), baja la sensibilidad o usa audífonos.
+- **Voz:** detecta si estás hablando por el volumen, no reconoce palabras. Si hay ruido (ventilador, teclado), usa **Ajustes → Calibrar con 3 s de silencio**, o audífonos con micrófono.
 
 La configuración y el guion autoguardado están en `~/.config/mirada/`.
 

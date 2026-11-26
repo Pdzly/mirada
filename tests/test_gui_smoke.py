@@ -78,3 +78,37 @@ def test_camera_keys_and_battery_timer(qapp, tmp_path, monkeypatch):
     assert w.conf["camera_x_pct"] == 85
     w.stop_prompter()
     w.close()
+
+
+def test_calibration_flow(qapp, tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    from mirada import settings as st
+    from mirada.config import load_conf
+
+    def fake_start(self, device=""):
+        self.stream = object()
+        return True
+
+    def tick_with_audio(ms, fn):
+        # cada segundo simulado llegan bloques de audio con ruido de ventilador
+        if d._calib_meter is not None:
+            for _ in range(20):
+                d._calib_meter.feed(0.36, now=0.0)
+        fn()
+
+    monkeypatch.setattr(st, "AUDIO_OK", True)
+    monkeypatch.setattr(st.VoiceMeter, "start", fake_start)
+    monkeypatch.setattr(st.VoiceMeter, "stop", lambda self: None)
+    monkeypatch.setattr(st.QTimer, "singleShot", staticmethod(tick_with_audio))
+    d = st.SettingsDialog(load_conf())
+    d.sens.setValue(100)
+    d.start_calibration()
+    assert d.calib_btn.isEnabled()
+    assert d.sens.value() < 60
+    assert "Listo" in d.calib_msg.text()
+
+    # cerrar el diálogo a mitad de la medición no debe fallar
+    monkeypatch.setattr(st.QTimer, "singleShot", staticmethod(lambda ms, fn: None))
+    d.start_calibration()
+    d.reject()
+    d._calib_tick()
